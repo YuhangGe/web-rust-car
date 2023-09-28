@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "web-rust-car-core"
+		},
+		{
+			"path": "web-rust-car-remote-control"
+		}
+	],
+	"settings": {}
+}

@@ -1,0 +1,24 @@
+// use esp_idf_hal::prelude::Peripherals;
+// use esp_idf_svc::eventloop::EspSystemEventLoop;
+use log::info;
+// If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
+use esp_idf_sys as _;
+
+fn main() {
+    esp_idf_sys::link_patches();
+    esp_idf_svc::log::EspLogger::initialize_default();
+
+    // let peripherals = Peripherals::take().unwrap();
+    // let sysloop = EspSystemEventLoop::take().unwrap();
+
+    info!("Hello, world!");
+
+   
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        info!("Hello, world!");
+
+        // Wait...
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+}
