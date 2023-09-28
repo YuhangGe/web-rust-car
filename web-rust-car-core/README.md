@@ -24,7 +24,16 @@ $EGT_PATH/submodule-update.sh # 将 submodules 也同步为 5.1 版本
 
 $EGT_PATH/install.sh # 安装 esp-idl sdk 工具
 ```
-2. 安装 rustup 及 rust nightly
+2. 安装 rust 生态以及 `ldproxy` 工具
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+rustup toolchain install nightly --component rust-src
+
+cargo install ldproxy # 重要，不要忘了 ldproxy 工具
+```
+  - (可选)：参考 [https://rsproxy.cn/]() 配置国内源。
+
 3. 修改 `.cargo/config.toml` 文件（非常重要！！）
 ```toml
 # 将下面的 IDF_PATH 修改为第 1 步 clone 下来的 esp-idf 所在目录的绝对路径
