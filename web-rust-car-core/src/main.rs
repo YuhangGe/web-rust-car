@@ -21,7 +21,7 @@ fn main() {
       ::log::info!("Multi-connect support: start advertising");
       ble_device.get_advertising().start().unwrap();
     });
-    let service = server.create_service(uuid128!("fafafafa-fafa-fafa-fafa-fafafafafafa"));
+    let service = server.create_service(uuid128!("a3c87500-8ed3-4bdf-8a39-a01bebede295"));
   
     // A static characteristic.
     // let static_characteristic = service.lock().create_characteristic(
@@ -56,7 +56,7 @@ fn main() {
     let ble_advertising = ble_device.get_advertising();
     ble_advertising
       .name("Web-Rust-Car")
-      .add_service_uuid(uuid128!("fafafafa-fafa-fafa-fafa-fafafafafafa"));
+      .add_service_uuid(uuid128!("a3c87500-8ed3-4bdf-8a39-a01bebede295"));
   
     ble_advertising.start().unwrap();
   
