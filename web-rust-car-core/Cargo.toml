@@ -1,5 +1,5 @@
 [package]
-name = "hardware-check"
+name = "web-rust-car"
 version = "0.1.0"
 authors = [
     "Anatol Ulrich <anatol.ulrich@ferrous-systems.com>",

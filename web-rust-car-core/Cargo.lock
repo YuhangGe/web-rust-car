@@ -813,20 +813,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hardware-check"
-version = "0.1.0"
-dependencies = [
- "embedded-hal 0.2.7",
- "embedded-svc",
- "embuild",
- "esp-idf-hal",
- "esp-idf-svc",
- "esp-idf-sys",
- "esp32-nimble",
- "log",
-]
-
-[[package]]
 name = "hash32"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1782,6 +1768,20 @@ name = "wasm-bindgen-shared"
 version = "0.2.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca6ad05a4870b2bf5fe995117d3728437bd27d7cd5f06f13c17443ef369775a1"
+
+[[package]]
+name = "web-rust-car"
+version = "0.1.0"
+dependencies = [
+ "embedded-hal 0.2.7",
+ "embedded-svc",
+ "embuild",
+ "esp-idf-hal",
+ "esp-idf-svc",
+ "esp-idf-sys",
+ "esp32-nimble",
+ "log",
+]
 
 [[package]]
 name = "web-sys"

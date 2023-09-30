@@ -1,8 +1,14 @@
 extern crate alloc;
+mod controller;
+
+use std::sync::{Arc, Mutex};
 
 // use alloc::format;
+use controller::{Controller, TICK_MILLS};
 use esp32_nimble::{uuid128, BLEDevice, NimbleProperties};
 use esp_idf_sys as _;
+
+
 fn main() {
   esp_idf_sys::link_patches();
   esp_idf_svc::log::EspLogger::initialize_default();
@@ -10,6 +16,8 @@ fn main() {
   let ble_device = BLEDevice::take();
 
   let server = ble_device.get_server();
+  let controller = Arc::new(Mutex::new(Controller::new()));
+
   server.on_connect(|server, desc| {
     ::log::info!("Client connected");
 
@@ -17,9 +25,18 @@ fn main() {
       .update_conn_params(desc.conn_handle, 24, 48, 0, 60)
       .unwrap();
 
-    ::log::info!("Multi-connect support: start advertising");
-    ble_device.get_advertising().start().unwrap();
+    // ::log::info!("Multi-connect support: start advertising");
+    // ble_device.get_advertising().start().unwrap();
   });
+  let controller3 = controller.clone();
+  server.on_disconnect(move |_| {
+    match controller3.lock() {
+      Ok(mut ctrl) => ctrl.stop(),
+      Err(e) => ::log::error!("{}", e),
+    }
+    ::log::info!("Client disconected");
+  });
+
   let service = server.create_service(uuid128!("a3c87500-8ed3-4bdf-8a39-a01bebede295"));
 
   // A static characteristic.
@@ -43,13 +60,22 @@ fn main() {
     uuid128!("3c9a3f00-8ed3-4bdf-8a39-a01bebede295"),
     NimbleProperties::READ | NimbleProperties::WRITE,
   );
+
+  let controller2 = controller.clone();
   writable_characteristic
     .lock()
     .on_read(move |_, _| {
       ::log::info!("Read from writable characteristic.");
     })
     .on_write(move |args| {
-      ::log::info!("Wrote to writable characteristic: {:?}", args.recv_data);
+      match controller2.lock() {
+        Ok(mut ctrl) => ctrl.handle(args.recv_data),
+        Err(e) => {
+          ::log::error!("{:?}", e)
+        }
+      }
+
+      // ::log::info!("Wrote to writable characteristic: {:?}", args.recv_data);
     });
 
   let ble_advertising = ble_device.get_advertising();
@@ -69,4 +95,17 @@ fn main() {
 
   //   counter += 1;
   // }
+
+
+  loop {
+    esp_idf_hal::delay::FreeRtos::delay_ms(TICK_MILLS as u32);
+    match controller.lock() {
+      Ok(mut ctrl) => {
+        ctrl.tick();
+      }
+      Err(e) => {
+        ::log::error!("{:?}", e)
+      }
+    }
+  }
 }
