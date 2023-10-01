@@ -4,7 +4,7 @@
 
 ## 开发
 
-[todo]
+当前项目暂时是在项目 [https://github.com/YuhangGe/nextjs-starter/tree/webrc](https://github.com/YuhangGe/nextjs-starter/tree/webrc) 中开了一个分支，该项目是 nextjs 脚手架 + preline UI 组件库。
 
 ## 技术栈
 

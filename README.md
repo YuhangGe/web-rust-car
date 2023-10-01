@@ -4,7 +4,7 @@
 
 ## 如何使用
 
-任意找一台支持蓝牙的手机，打开浏览器访问 [todo]，根据界面提示找到 Web-Rust-Car 的蓝牙，链接后开始畅玩。
+任意找一台支持蓝牙的手机，打开浏览器访问 [https://webrc.vercel.app/](https://webrc.vercel.app/)，根据界面提示找到 Web-Rust-Car 的蓝牙，链接后开始畅玩。
 
 ## Web 遥控器
 

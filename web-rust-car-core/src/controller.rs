@@ -1,15 +1,16 @@
+use esp_idf_hal::gpio::{PinDriver, Output, Gpio18};
 use esp_idf_hal::ledc::*;
 use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_hal::prelude::*;
 
 pub const TICK_MILLS: u16 = 50;
 /// 转向马达的最大速度，0~255
-pub const TURN_MAX_SPEED: u8 = u8::MAX;
+pub const TURN_MAX_SPEED: u8 = 240;
 /// 前进马达的最大速度，0~255
 pub const RUN_MAX_SPEED: u8 = u8::MAX;
-pub const TURN_ACCEL: u8 = 1;
-pub const RUN_ACCEL: u8 = 1;
-pub const TURN_MIN_SPEED: u8 = 190;
+pub const TURN_ACCEL: u8 = 2;
+pub const RUN_ACCEL: u8 = 4;
+pub const TURN_MIN_SPEED: u8 = 230;
 pub const RUN_MIN_SPEED: u8 = 190;
 
 #[derive(Debug)]
@@ -60,11 +61,16 @@ impl<'a> Motor<'a> {
     let speed = if speed == 0 {
       0
     } else {
-      speed.max(self.min_speed).min(self.max_speed)
+      let v = (self.max_speed - self.min_speed) as u32 * speed as u32 / u8::MAX as u32;
+      self.min_speed + v as u8
+      // speed.max(self.min_speed).min(self.max_speed)
     };
+    if self.target_speed.positive == positive && self.target_speed.value == speed {
+      return;
+    }
     self.target_speed.positive = positive;
     self.target_speed.value = speed;
-    ::log::info!("set speed {}", speed);
+    // ::log::info!("Set {:?}", self.target_speed);
     if self.current_speed.value == 0 && speed > 0 {
       self.current_speed.positive = positive;
       self.current_speed.value = self.min_speed;
@@ -101,10 +107,13 @@ impl<'a> Motor<'a> {
     let cv = self.current_speed.value;
     let tv = self.target_speed.value;
     let cp = self.current_speed.positive;
-    let tp = self.current_speed.positive;
+    let tp = self.target_speed.positive;
+    // ::log::info!("{} {} {} {}", cv, tv, cp, tp);
     if cv == tv && (cv == 0 || cp == tp) {
       return;
     }
+    // ::log::info!("{} {} {} {}", cv, tv, cp, tp);
+
     // ::log::info!("{:?}, {:?}", self.current_speed, self.target_speed);
 
     if cp == tp {
@@ -119,7 +128,6 @@ impl<'a> Motor<'a> {
             self.current_speed.value = cv;
           }
         }
-       
       } else {
         if tv - cv <= self.acceleration {
           self.current_speed.value = tv;
@@ -143,8 +151,8 @@ impl<'a> Motor<'a> {
         self.current_speed.value = cv;
       }
     }
-    ::log::info!("{:?}", self.current_speed);
-   
+    // ::log::info!("Adj {},{} {:?}", cp, cv, self.current_speed);
+
     if cp != self.current_speed.positive {
       // 如果方向发生了扭转，则将原来旧方向 pin 口的 pwm 调为 0
       self.adj_pin(cp, 0);
@@ -155,16 +163,21 @@ impl<'a> Motor<'a> {
 pub struct Controller<'a> {
   turn_motor: Motor<'a>,
   run_motor: Motor<'a>,
+  light_pin: PinDriver<'a, Gpio18, Output>
 }
 
 const TURN_LEFT: u8 = 1;
 const TURN_RIGHT: u8 = 2;
 const RUN_FRONT: u8 = 3;
 const RUN_BACK: u8 = 4;
+const STOP_ALL: u8 = 5;
+const TOGGLE_LIGHT: u8 = 6;
 
 impl<'a> Controller<'a> {
   pub fn new() -> Self {
     let peripherals = Peripherals::take().unwrap();
+    let light_pin = PinDriver::output(peripherals.pins.gpio18).unwrap();
+
     let turn_left_pin = LedcDriver::new(
       peripherals.ledc.channel0,
       LedcTimerDriver::new(
@@ -209,6 +222,7 @@ impl<'a> Controller<'a> {
     .unwrap();
 
     Self {
+      light_pin,
       turn_motor: Motor::new(
         TURN_MAX_SPEED,
         TURN_MIN_SPEED,
@@ -229,11 +243,14 @@ impl<'a> Controller<'a> {
     if recv_data.len() < 2 {
       return;
     }
+    // ::log::info!("{:?}", recv_data);
     match recv_data[0] {
       TURN_LEFT => self.turn_motor.set_speed(true, recv_data[1]),
       TURN_RIGHT => self.turn_motor.set_speed(false, recv_data[1]),
       RUN_FRONT => self.run_motor.set_speed(true, recv_data[1]),
       RUN_BACK => self.run_motor.set_speed(false, recv_data[1]),
+      STOP_ALL => self.stop(),
+      TOGGLE_LIGHT => self.toggle_light(recv_data[1]),
       _ => {}
     }
   }
@@ -244,5 +261,24 @@ impl<'a> Controller<'a> {
   pub fn tick(&mut self) {
     self.turn_motor.tick();
     self.run_motor.tick();
+  }
+  pub fn toggle_light(&mut self, light: u8) {
+    match if light == 0 {
+      self.light_pin.set_low()
+    } else {
+      self.light_pin.set_high()
+    } {
+      Ok(_) => {},
+      Err(e) => ::log::error!("{:?}", e)
+    }
+  }
+  pub fn flash(&mut self) {
+    self.toggle_light(1);
+    esp_idf_hal::delay::FreeRtos::delay_ms(400);
+    self.toggle_light(0);
+    esp_idf_hal::delay::FreeRtos::delay_ms(400);
+    self.toggle_light(1);
+    esp_idf_hal::delay::FreeRtos::delay_ms(400);
+    self.toggle_light(0);
   }
 }

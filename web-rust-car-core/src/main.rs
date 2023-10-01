@@ -18,9 +18,18 @@ fn main() {
   let server = ble_device.get_server();
   let controller = Arc::new(Mutex::new(Controller::new()));
 
-  server.on_connect(|server, desc| {
+  let controller4 = controller.clone();
+  server.on_connect(move |server, desc| {
     ::log::info!("Client connected");
-
+    // 蓝牙连上后也闪速下大灯
+    match controller4.lock() {
+      Ok(mut ctrl) => {
+        ctrl.flash();
+      }
+      Err(e) => {
+        ::log::error!("{:?}", e)
+      }
+    };
     server
       .update_conn_params(desc.conn_handle, 24, 48, 0, 60)
       .unwrap();
@@ -96,6 +105,14 @@ fn main() {
   //   counter += 1;
   // }
 
+  match controller.lock() {
+    Ok(mut ctrl) => {
+      ctrl.flash();
+    }
+    Err(e) => {
+      ::log::error!("{:?}", e)
+    }
+  }
 
   loop {
     esp_idf_hal::delay::FreeRtos::delay_ms(TICK_MILLS as u32);
